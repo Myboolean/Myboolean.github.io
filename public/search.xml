@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  <entry>
+    <title>zookeeper</title>
+    <url>/posts/3ad834c9/</url>
+    <content><![CDATA[<h2 id="ZooKeeper-命令操作"><a href="#ZooKeeper-命令操作" class="headerlink" title="ZooKeeper 命令操作"></a>ZooKeeper 命令操作</h2><h3 id="ZooKeeper数据模型"><a href="#ZooKeeper数据模型" class="headerlink" title="ZooKeeper数据模型"></a>ZooKeeper数据模型</h3><ul>
+<li>Zookeeper是一个树形目录服务，他的数据模型和Unix的文件系统目录树很类似，拥有一个层次化结构。</li>
+<li>这里面的没一个节点都被称为:ZNODE,每个节点上都会保存自己的数据和结点信息.</li>
+<li>节点可以有子节点，同时也允许少量(1MB)数据存储在该节点下。</li>
+<li>节点分为四大类:</li>
+<li>PERSISTENT 持久化节点</li>
+<li>EPHEMERAL 临时节点: -e</li>
+<li>PERSISTENT_SEQENTIAL 持久化顺序节点: -s</li>
+<li>EPHEMERAL _SEQENTIAL 临时顺序节点：-es</li>
+</ul>
+<p><img src="C:\Users\pzj\AppData\Roaming\Typora\typora-user-images\image-20220713093128099.png" alt="image-20220713093128099"></p>
+<h3 id="ZooKeeper-服务端命令"><a href="#ZooKeeper-服务端命令" class="headerlink" title="ZooKeeper 服务端命令"></a>ZooKeeper 服务端命令</h3><ul>
+<li>启动 ./zkServer.sh start</li>
+<li>停止./zkServer.sh stop</li>
+<li>查看 ./zkServer.sh status</li>
+<li>重启 ./zkServer.sh restart</li>
+</ul>
+<h3 id="ZooKeeper-客户端命令"><a href="#ZooKeeper-客户端命令" class="headerlink" title="ZooKeeper 客户端命令"></a>ZooKeeper 客户端命令</h3><ul>
+<li><p>./zkCli.sh -server localhost:2181  连接客户端</p>
+<ul>
+<li>连接本机只需要./zCli.sh </li>
+<li>quit 退出命令</li>
+</ul>
+</li>
+<li><p>ls /    /代表根节点</p>
+</li>
+<li><p>create /   create之后跟目录  ,目录之后跟数据，数据也可以不写</p>
+<ul>
+<li>有数据的可以使用get 加全路径获取数据</li>
+<li>set命令可以给其设置数据</li>
+<li>create 创建不能重复</li>
+</ul>
+</li>
+<li><p>delete 加全路径名删除</p>
+<ul>
+<li>文件里面有子目录用deleteall进行删除</li>
+</ul>
+</li>
+<li><p>help 帮助命令，防止遗忘</p>
+</li>
+<li><p>ls - s /dubbo 查看dubbo的详细信息</p>
+</li>
+</ul>
+<h2 id="Curator"><a href="#Curator" class="headerlink" title="Curator"></a>Curator</h2><h3 id="Curator-常用API"><a href="#Curator-常用API" class="headerlink" title="Curator 常用API"></a>Curator 常用API</h3><ul>
+<li><p>创建连接</p>
+</li>
+<li><p>~~~java</p>
+<pre><code>@Test
+public void test1()&#123;
+    // 1.第一种方式
+    /**
+     * String connectString,  连接字符串.zk server地址和端口
+     * int sessionTimeoutMs,   会话超时时间，单位ms
+     * int connectionTimeoutMs,  连接超时时间,单位ms
+     * RetryPolicy retryPolicy 超时重传策略
+     */
+    //重试策略
+    ExponentialBackoffRetry retry = new ExponentialBackoffRetry(3000, 10);
+</code></pre>
+<p>//        CuratorFramework curatorFramework = CuratorFrameworkFactory.newClient(“192.168.116.128:2181”,<br>//                60 * 1000, 15 * 1000, retry);<br>//        //开启连接<br>//        curatorFramework.start();</p>
+<pre><code>            //第二种方式
+    CuratorFramework build = CuratorFrameworkFactory.builder().connectString(&quot;192.168.116.128:2181&quot;)
+            .sessionTimeoutMs(60 * 1000).sessionTimeoutMs(15 * 1000).retryPolicy(retry).
+            namespace(&quot;itheima&quot;).build();
+    build.start();
+    System.out.println(build);
+&#125;
+</code></pre>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">- 创建结点</span><br><span class="line"></span><br><span class="line">  - 基本创建</span><br><span class="line"></span><br><span class="line">  - ~~~java</span><br><span class="line">    //        基本创建</span><br><span class="line">            //创建结点没有指定数据，那么将当前客户端的ip当做数据进行存储</span><br><span class="line">            String s = client.create().forPath(&quot;/app1&quot;);</span><br><span class="line">            System.out.println(s);</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>创建结点带数据</p>
+</li>
+<li><p>```java</p>
+<pre><code>    String s = client.create().forPath(&quot;/app2&quot;, &quot;heh&quot;.getBytes(StandardCharsets.UTF_8));
+</code></pre>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">- 设置结点类型</span><br><span class="line"></span><br><span class="line">- ```java</span><br><span class="line">  String s = client.create().withMode(CreateMode.PERSISTENT).forPath(&quot;/app3&quot;, &quot;heh3&quot;.getBytes(StandardCharsets.UTF_8));</span><br></pre></td></tr></table></figure></li>
+<li><p>创建多级结点  /app1/p1</p>
+</li>
+<li><p>```java<br>String s = client.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT).forPath(“/node/app1”, “node”.getBytes(StandardCharsets.UTF_8));</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">- 查询结点：</span><br><span class="line"></span><br><span class="line">  - 查询数据:getData()</span><br><span class="line"></span><br><span class="line">  - 查询子节点: ls  getChildren()</span><br><span class="line"></span><br><span class="line">  - 查询结点状态信息:ls -s  </span><br><span class="line"></span><br><span class="line">  - </span><br><span class="line"></span><br><span class="line">  - ```java</span><br><span class="line">        @Test</span><br><span class="line">        public void testFind() throws Exception &#123;</span><br><span class="line">            // 1.第一种方式</span><br><span class="line">            //查询数据</span><br><span class="line">    //      client.get</span><br><span class="line">    //        byte[] bytes = client.getData().forPath(&quot;/app1&quot;);</span><br><span class="line">    //        System.out.println(new String(bytes));</span><br><span class="line">    //查询子节点</span><br><span class="line">    //        List&lt;String&gt; strings = client.getChildren().forPath(&quot;/&quot;);</span><br><span class="line">    //        System.out.println(strings);</span><br><span class="line">            // 查询结点的状态信息</span><br><span class="line">            Stat stat = new Stat();</span><br><span class="line">            client.getData().storingStatIn(stat).forPath(&quot;/app1&quot;);</span><br><span class="line">            System.out.println(stat);</span><br><span class="line">        &#125;</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p>修改结点:</p>
+</li>
+<li><p>```<br>@Test<br>public void testSet() throws Exception {</p>
+<pre><code>Stat stat = new Stat();
+client.getData().storingStatIn(stat).forPath(&quot;/app1&quot;);
+
+// withVersion根据版本修改，为-1则标识为忽略版本号,version是通过查询出来的，目的让其他客户端或者线程不干扰我
+stat = client.setData()
+        // 版本号 -1 标识忽略版本号
+        .withVersion(stat.getVersion())
+        .forPath(&quot;/app1&quot;, &quot;kiss&quot;.getBytes());
+System.out.println(stat);
+</code></pre>
+<p>}</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line">- 删除结点:</span><br><span class="line"></span><br><span class="line">- </span><br><span class="line"></span><br><span class="line">- ```java</span><br><span class="line">      @Test</span><br><span class="line">      public void testDelete() throws Exception &#123;</span><br><span class="line">  //        Stat stat = new Stat();</span><br><span class="line">  //        client.getData().storingStatIn(stat).forPath(&quot;/app1&quot;);</span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">          // 删除单个结点</span><br><span class="line">          // withVersion根据版本修改，为-1则标识为忽略版本号,version是通过查询出来的，目的让其他客户端或者线程不干扰我</span><br><span class="line">  //        client.delete().withVersion(stat.getVersion())</span><br><span class="line">  //                .forPath(&quot;/app1&quot;);</span><br><span class="line">  //        System.out.println(stat);</span><br><span class="line">          // 删除带有子节点的节点</span><br><span class="line">  //        client.delete().deletingChildrenIfNeeded().forPath(&quot;/node&quot;);</span><br><span class="line">          //必须成功的删除</span><br><span class="line">  //        client.delete().guaranteed().forPath(&quot;/app2&quot;);</span><br><span class="line">          //回调</span><br><span class="line">  </span><br><span class="line">          client.delete().guaranteed().inBackground(new BackgroundCallback() &#123;</span><br><span class="line">              @Override</span><br><span class="line">              public void processResult(CuratorFramework curatorFramework, CuratorEvent curatorEvent) throws Exception &#123;</span><br><span class="line">                  System.out.println(&quot;我被删除了&quot;);</span><br><span class="line">                  System.out.println(curatorFramework + &quot;  &quot; + curatorEvent);</span><br><span class="line">              &#125;</span><br><span class="line">          &#125;).forPath(&quot;/app3&quot;);</span><br><span class="line">      &#125;</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h4 id="Watch事件监听"><a href="#Watch事件监听" class="headerlink" title="Watch事件监听"></a>Watch事件监听</h4><ul>
+<li>Zookeeper允许客户在指定节点上注册一个Watch，并且在一些特定时间出发的时候，ZooKeeper服务端会将事件通知到感兴趣的客户端上去，该机制是ZooKeeper实现分布式协调服务的重要特性.</li>
+<li><img src="C:\Users\pzj\AppData\Roaming\Typora\typora-user-images\image-20220713151642621.png" alt="image-20220713151642621"></li>
+<li></li>
+</ul>
+<p><img src="C:\Users\pzj\AppData\Roaming\Typora\typora-user-images\image-20220713151940116.png" alt="image-20220713151940116"></p>
+<ul>
+<li><p>NodeCache</p>
+</li>
+<li><pre><code>@Test
+public void testNodeCache() throws Exception &#123;
+    // 1. 创建NodeCache对象
+    NodeCache nodeCache = new NodeCache(client,&quot;/app1&quot;, false);
+    // 2. 注册监听
+    nodeCache.getListenable().addListener(new NodeCacheListener() &#123;
+        @Override
+        public void nodeChanged() throws Exception &#123;
+            System.out.println(&quot;节点变化了&quot;);
+            //获取修改节点后的数据
+            byte[] data = nodeCache.getCurrentData().getData();
+            System.out.println(new String(data));
+        &#125;
+    &#125;);
+    //3. 开启监听,如果设置为True则开启监听时加载缓冲数据
+    nodeCache.start(true);
+    while (true)&#123;
+
+    &#125;
+&#125;
+</code></pre>
+</li>
+<li><p>其他的类只是功能不一样，使用方法雷同</p>
+</li>
+</ul>
+]]></content>
+      <categories>
+        <category>分布式</category>
+      </categories>
+      <tags>
+        <tag>注册中心</tag>
+        <tag>配置管理</tag>
+        <tag>分布式系统</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Dubbo</title>
+    <url>/posts/f6253398/</url>
+    <content><![CDATA[<h2 id="Dubbo简介"><a href="#Dubbo简介" class="headerlink" title="Dubbo简介"></a>Dubbo简介</h2><p>Dubbo 是一款高性能、轻量级的开源Java RPC框架，提供面向接口代理的高性能RPC调用、智能负载均衡、服务自动注册和发现、运行期流量调度、可视化服务治理和运维等功能。</p>
+<h2 id="大型互联网项目架构目标"><a href="#大型互联网项目架构目标" class="headerlink" title="大型互联网项目架构目标"></a>大型互联网项目架构目标</h2><p>衡量网站的性能指标:</p>
+<ul>
+<li>吞吐量<ul>
+<li>单位时间内能处理的请求数</li>
+<li>QPS: 每秒查询数</li>
+<li>TPS: 每秒</li>
+</ul>
+</li>
+<li>响应时间<ul>
+<li>执行一个请求从开始到最后收到响应花费的所有时间</li>
+</ul>
+</li>
+<li>高性能</li>
+<li>高可用</li>
+<li>并发数：同时能处理的请求数量<ul>
+<li>并发连接数</li>
+<li>请求数QPS</li>
+<li>并发用户数</li>
+</ul>
+</li>
+<li>可伸缩：通过硬件增加/减少，提高/降低处理能力。</li>
+<li>高可扩展:系统间耦合度低，方便通过新增/移除方式，增加/减少新的功能/模块。</li>
+</ul>
+<p>互联网项目特点：</p>
+<ul>
+<li><p>用户多</p>
+</li>
+<li><p>流量大，并发高</p>
+</li>
+<li><p>海量数据</p>
+</li>
+<li><p>易受攻击</p>
+</li>
+<li><p>功能繁琐</p>
+</li>
+<li><p>变更快</p>
+</li>
+</ul>
+<h2 id="集群和分布式"><a href="#集群和分布式" class="headerlink" title="集群和分布式"></a>集群和分布式</h2><ul>
+<li>集群<ul>
+<li>多个部分做同样的事情</li>
+<li>一个业务模块，部署在多台服务器上</li>
+</ul>
+</li>
+<li>分布式<ul>
+<li>多个部分做不同的事情</li>
+<li>一个大的业务系统，拆分成多个小的模块，部署在多台机器上</li>
+</ul>
+</li>
+</ul>
+<h2 id="架构演进单体架构"><a href="#架构演进单体架构" class="headerlink" title="架构演进单体架构"></a>架构演进单体架构</h2><p>优点：</p>
+<ul>
+<li>简单：开发部署都很方便，小型项目首选</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li><p>项目启动慢</p>
+</li>
+<li><p>可靠性差</p>
+</li>
+<li><p>可伸缩性差</p>
+</li>
+<li><p>扩展性和可维护性差</p>
+</li>
+<li><p>性能低</p>
+</li>
+</ul>
+<h2 id="Dubbo高级特性-负载均衡"><a href="#Dubbo高级特性-负载均衡" class="headerlink" title="Dubbo高级特性-负载均衡"></a>Dubbo高级特性-负载均衡</h2><p>策略：</p>
+<ul>
+<li>Random按权重随机，默认值。按照权重设计随机概率。</li>
+</ul>
+]]></content>
+      <categories>
+        <category>Dubbo</category>
+      </categories>
+      <tags>
+        <tag>java</tag>
+        <tag>Dubbo</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>背包问题全解</title>
+    <url>/posts/236f2ea1/</url>
+    <content><![CDATA[<h1 id="背包问题"><a href="#背包问题" class="headerlink" title="背包问题"></a>背包问题</h1><h2 id="01背包问题"><a href="#01背包问题" class="headerlink" title="01背包问题"></a>01背包问题</h2><p>有 NN 件物品和一个容量是 VV 的背包。每件物品只能使用一次。</p>
+<p>第 ii 件物品的体积是 vivi，价值是 wiwi。</p>
+<p>求解将哪些物品装入背包，可使这些物品的总体积不超过背包容量，且总价值最大。<br>输出最大价值。</p>
+<h4 id="输入格式"><a href="#输入格式" class="headerlink" title="输入格式"></a>输入格式</h4><p>第一行两个整数，N，VN，V，用空格隔开，分别表示物品数量和背包容积。</p>
+<p>接下来有 NN 行，每行两个整数 vi,wivi,wi，用空格隔开，分别表示第 ii 件物品的体积和价值。</p>
+<h4 id="输出格式"><a href="#输出格式" class="headerlink" title="输出格式"></a>输出格式</h4><p>输出一个整数，表示最大价值。</p>
+<h4 id="数据范围"><a href="#数据范围" class="headerlink" title="数据范围"></a>数据范围</h4><p>0&lt;N,V≤10000&lt;N,V≤1000<br>0&lt;vi,wi≤10000&lt;vi,wi≤1000</p>
+<h4 id="输入样例"><a href="#输入样例" class="headerlink" title="输入样例"></a>输入样例</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">4 5</span><br><span class="line">1 2</span><br><span class="line">2 4</span><br><span class="line">3 4</span><br><span class="line">4 5</span><br></pre></td></tr></table></figure>
+
+<h4 id="输出样例："><a href="#输出样例：" class="headerlink" title="输出样例："></a>输出样例：</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">8</span><br></pre></td></tr></table></figure>
+
+<h4 id="解题思路"><a href="#解题思路" class="headerlink" title="解题思路:"></a>解题思路:</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">状态表示 f[i][j] </span><br><span class="line">	集合 表示取前i件物品，体积为j的时候能取到的最大价值</span><br><span class="line">	属性 max</span><br><span class="line">集合划分</span><br><span class="line">使用最后一个变化的状态也就是f[i-1]表示取前i-1件物品，这个时候如果j&gt;=v[i]</span><br><span class="line">	两种情况：取第i件物品，不取第i件物品，取最大值</span><br><span class="line">	即f[i][j] = max(f[i-1][j], f[i - 1][j - v[i]] + w[i])</span><br><span class="line">	需要的是上一个状态的下的方程。</span><br><span class="line">	二维状态下 时间复杂度和空间复杂度均为O(NV)</span><br><span class="line">优化成一维：</span><br><span class="line">	因为需要上一个状态的数值，那么可以让体积j从大到小枚举，保证每一次使用的体积是上一次剩下的体积</span><br><span class="line">	一维状态下的时间复杂度没有变，但是空间复杂度被优化到O(V)</span><br></pre></td></tr></table></figure>
+
+<p>不明白如下图:</p>
+<p><img src="01bag.png" alt="image-20220711194829236"></p>
+<h4 id="code"><a href="#code" class="headerlink" title="code"></a>code</h4><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.*;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Created by IntelliJ IDEA.</span></span><br><span class="line"><span class="comment"> * User: pzj</span></span><br><span class="line"><span class="comment"> * Date: 2022/7/10</span></span><br><span class="line"><span class="comment"> * Time: 9:36</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> <span class="variable">N</span> <span class="operator">=</span> <span class="number">1010</span>;</span><br><span class="line"><span class="comment">//    private static final int [][] f = new int[N][N];</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * f[i][j]表示在取前i件物品，体积为j的时候能取到的最大价值</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> args</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@throws</span> IOException</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line"><span class="comment">//    public static void main(String[] args) throws IOException &#123;</span></span><br><span class="line"><span class="comment">//        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));</span></span><br><span class="line"><span class="comment">//        BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(System.out));</span></span><br><span class="line"><span class="comment">//        String[] s = br.readLine().split(&quot; &quot;);</span></span><br><span class="line"><span class="comment">//        int n = Integer.parseInt(s[0]);</span></span><br><span class="line"><span class="comment">//        int m = Integer.parseInt(s[1]);</span></span><br><span class="line"><span class="comment">//        // 每次输入一堆v，w值，因为对于dp来说每一次都是用一组v，w值取更新，所以可以不用数组来接收</span></span><br><span class="line"><span class="comment">//        for (int i = 1; i &lt;= n ; i++) &#123;</span></span><br><span class="line"><span class="comment">//            String[] s1 = br.readLine().split(&quot; &quot;);</span></span><br><span class="line"><span class="comment">//            int v = Integer.parseInt(s1[0]);</span></span><br><span class="line"><span class="comment">//            int w = Integer.parseInt(s1[1]);</span></span><br><span class="line"><span class="comment">//            for(int j = 0 ; j &lt;= m;j++)&#123;</span></span><br><span class="line"><span class="comment">//                f[i][j] = f[i-1][j];</span></span><br><span class="line"><span class="comment">//                if(j  &gt;= v)&#123;</span></span><br><span class="line"><span class="comment">//                    f[i][j] = Math.max(f[i][j], f[i-1][j-v] + w);</span></span><br><span class="line"><span class="comment">//                &#125;</span></span><br><span class="line"><span class="comment">//            &#125;</span></span><br><span class="line"><span class="comment">//        &#125;</span></span><br><span class="line"><span class="comment">//        int res = 0;</span></span><br><span class="line"><span class="comment">//        for(int i = 0 ; i &lt;= m;i++) res = Math.max(res, f[n][i]);</span></span><br><span class="line"><span class="comment">//        System.out.println(res);</span></span><br><span class="line"><span class="comment">//        br.close();</span></span><br><span class="line"><span class="comment">//        bw.close();</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">//    &#125;</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> [] f = <span class="keyword">new</span> <span class="title class_">int</span>[N];</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * f[i]表示体积为i时物品价值的最大值</span></span><br><span class="line"><span class="comment">     * 为了保证此时的f[i]使用的状态是上一次的状态，可以让体积从大到小进行计算，保证每一次使用的体积是上一次剩下的状态</span></span><br><span class="line"><span class="comment">     * 此时f[m]必定为最大值</span></span><br><span class="line"><span class="comment">     * 证明:</span></span><br><span class="line"><span class="comment">     *      如果f[k] = max_w,两种情况:</span></span><br><span class="line"><span class="comment">     *          从f[0]转移 ==&gt;f[v[0]] + w[0] == &gt;  ...==&gt; f[k]</span></span><br><span class="line"><span class="comment">     *          不从f[0]转移，其实本质上是一样的f那么从f[m - k]转移，因为所有的f值初始化为0，</span></span><br><span class="line"><span class="comment">     *          那么可以通过同样的转移路径得到f[m] = f[m - k] == &gt; ..... ==&gt; f[m]和f[k]的值是一样的，所以f[m]一定是最大值</span></span><br><span class="line"><span class="comment">     *      如果吧f[0]初始化为0,其他值初始化为负无穷，可以保证此时路径必定只能从f[0]进行转移,此时需要循环判断哪里是最大值</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> args</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@throws</span> IOException</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">        <span class="type">BufferedReader</span> <span class="variable">br</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">BufferedReader</span>(<span class="keyword">new</span> <span class="title class_">InputStreamReader</span>(System.in));</span><br><span class="line">        <span class="type">BufferedWriter</span> <span class="variable">bw</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">BufferedWriter</span>(<span class="keyword">new</span> <span class="title class_">OutputStreamWriter</span>(System.out));</span><br><span class="line">        String[] s = br.readLine().split(<span class="string">&quot; &quot;</span>);</span><br><span class="line">        <span class="type">int</span> <span class="variable">n</span> <span class="operator">=</span> Integer.parseInt(s[<span class="number">0</span>]);</span><br><span class="line">        <span class="type">int</span> <span class="variable">m</span> <span class="operator">=</span> Integer.parseInt(s[<span class="number">1</span>]);</span><br><span class="line">        <span class="comment">// 每次输入一堆v，w值，因为对于dp来说每一次都是用一组v，w值取更新，所以可以不用数组来接收</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">1</span>; i &lt;= n ; i++) &#123;</span><br><span class="line">            String[] s1 = br.readLine().split(<span class="string">&quot; &quot;</span>);</span><br><span class="line">            <span class="type">int</span> <span class="variable">v</span> <span class="operator">=</span> Integer.parseInt(s1[<span class="number">0</span>]);</span><br><span class="line">            <span class="type">int</span> <span class="variable">w</span> <span class="operator">=</span> Integer.parseInt(s1[<span class="number">1</span>]);</span><br><span class="line">            <span class="keyword">for</span>(<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> m ; j &gt;= v;j--)&#123;</span><br><span class="line"><span class="comment">//                System.out.println(j - v);</span></span><br><span class="line">                f[j] = Math.max(f[j], f[j-v] + w);</span><br><span class="line"></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(f[m]);</span><br><span class="line">        br.close();</span><br><span class="line">        bw.close();</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h2 id="完全背包问题"><a href="#完全背包问题" class="headerlink" title="完全背包问题"></a>完全背包问题</h2><p>有 NN 种物品和一个容量是 VV 的背包，每种物品都有无限件可用。</p>
+<p>第 ii 种物品的体积是 vivi，价值是 wiwi。</p>
+<p>求解将哪些物品装入背包，可使这些物品的总体积不超过背包容量，且总价值最大。<br>输出最大价值。</p>
+<h4 id="输入格式-1"><a href="#输入格式-1" class="headerlink" title="输入格式"></a>输入格式</h4><p>第一行两个整数，N，VN，V，用空格隔开，分别表示物品种数和背包容积。</p>
+<p>接下来有 NN 行，每行两个整数 vi,wivi,wi，用空格隔开，分别表示第 ii 种物品的体积和价值。</p>
+<h4 id="输出格式-1"><a href="#输出格式-1" class="headerlink" title="输出格式"></a>输出格式</h4><p>输出一个整数，表示最大价值。</p>
+<h4 id="数据范围-1"><a href="#数据范围-1" class="headerlink" title="数据范围"></a>数据范围</h4><p>0&lt;N,V≤10000&lt;N,V≤1000<br>0&lt;vi,wi≤10000&lt;vi,wi≤1000</p>
+<h4 id="输入样例-1"><a href="#输入样例-1" class="headerlink" title="输入样例"></a>输入样例</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">4 5</span><br><span class="line">1 2</span><br><span class="line">2 4</span><br><span class="line">3 4</span><br><span class="line">4 5</span><br></pre></td></tr></table></figure>
+
+<h4 id="输出样例：-1"><a href="#输出样例：-1" class="headerlink" title="输出样例："></a>输出样例：</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">10</span><br></pre></td></tr></table></figure>
+
+<h4 id="解题思路-1"><a href="#解题思路-1" class="headerlink" title="解题思路:"></a>解题思路:</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">因为每一种物品都可以无限使用，那么完全背包问题就是在01背包问题的情况下添加一下物品的限制</span><br><span class="line">相当于有无数件物品，只需要判断每一次 k * v[i] &lt;= j的时候，每一次都判断f[j]以及f[j - k * v] + w * k 的最大值即可。</span><br><span class="line">状态表示 f[i][j] </span><br><span class="line">	集合 表示取前i件物品，体积为j的时候能取到的最大价值</span><br><span class="line">	属性 max</span><br><span class="line">集合划分</span><br><span class="line">使用最后一个变化的状态也就是f[i-1]表示取前i-1件物品，这个时候如果j&gt;=v[i]</span><br><span class="line">	两种情况：取第i件物品，不取第i件物品，取最大值</span><br><span class="line">	即f[i][j] = max(f[i-1][j], f[i - 1][j - v[i]] + w[i])</span><br><span class="line">	需要的是上一个状态的下的方程。</span><br><span class="line">	二维状态下 时间复杂度和空间复杂度均为O(NV)</span><br><span class="line">优化成一维：</span><br><span class="line">	因为需要上一个状态的数值，那么可以让体积j从大到小枚举，保证每一次使用的体积是上一次剩下的体积</span><br><span class="line">	一维状态下的时间复杂度没有变，但是空间复杂度被优化到O(V)</span><br></pre></td></tr></table></figure>
+
+<h4 id="code-1"><a href="#code-1" class="headerlink" title="code"></a>code</h4><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.*;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Created by IntelliJ IDEA.</span></span><br><span class="line"><span class="comment"> * User: pzj</span></span><br><span class="line"><span class="comment"> * Date: 2022/7/10</span></span><br><span class="line"><span class="comment"> * Time: 10:24</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> <span class="variable">N</span> <span class="operator">=</span> <span class="number">1010</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> [] f = <span class="keyword">new</span> <span class="title class_">int</span>[N];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">        <span class="type">BufferedReader</span> <span class="variable">br</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">BufferedReader</span>(<span class="keyword">new</span> <span class="title class_">InputStreamReader</span>(System.in));</span><br><span class="line">        <span class="type">BufferedWriter</span> <span class="variable">bw</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">BufferedWriter</span>(<span class="keyword">new</span> <span class="title class_">OutputStreamWriter</span>(System.out));</span><br><span class="line">        String[] s = br.readLine().split(<span class="string">&quot; &quot;</span>);</span><br><span class="line">        <span class="type">int</span> <span class="variable">n</span> <span class="operator">=</span> Integer.parseInt(s[<span class="number">0</span>]);</span><br><span class="line">        <span class="type">int</span> <span class="variable">m</span> <span class="operator">=</span> Integer.parseInt(s[<span class="number">1</span>]);</span><br><span class="line">        <span class="comment">// 每次输入一堆v，w值，因为对于dp来说每一次都是用一组v，w值取更新，所以可以不用数组来接收</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">1</span>; i &lt;= n ; i++) &#123;</span><br><span class="line">            String[] s1 = br.readLine().split(<span class="string">&quot; &quot;</span>);</span><br><span class="line">            <span class="type">int</span> <span class="variable">v</span> <span class="operator">=</span> Integer.parseInt(s1[<span class="number">0</span>]);</span><br><span class="line">            <span class="type">int</span> <span class="variable">w</span> <span class="operator">=</span> Integer.parseInt(s1[<span class="number">1</span>]);</span><br><span class="line">            <span class="keyword">for</span>(<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> m ; j &gt;= v;j--)&#123;</span><br><span class="line"><span class="comment">//                System.out.println(j - v);</span></span><br><span class="line">                <span class="keyword">for</span>(<span class="type">int</span> <span class="variable">k</span> <span class="operator">=</span> <span class="number">1</span>; k * v&lt;= j;k++)</span><br><span class="line">                    f[j] = Math.max(f[j], f[j-k * v] + k * w);</span><br><span class="line"></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(f[m]);</span><br><span class="line">        br.close();</span><br><span class="line">        bw.close();</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="多重背包问题1"><a href="#多重背包问题1" class="headerlink" title="多重背包问题1"></a>多重背包问题1</h2><p>有 NN 种物品和一个容量是 VV 的背包。</p>
+<p>第 ii 种物品最多有 sisi 件，每件体积是 vivi，价值是 wiwi。</p>
+<p>求解将哪些物品装入背包，可使物品体积总和不超过背包容量，且价值总和最大。<br>输出最大价值。</p>
+<h4 id="输入格式-2"><a href="#输入格式-2" class="headerlink" title="输入格式"></a>输入格式</h4><p>第一行两个整数，N，VN，V，用空格隔开，分别表示物品种数和背包容积。</p>
+<p>接下来有 NN 行，每行三个整数 vi,wi,sivi,wi,si，用空格隔开，分别表示第 ii 种物品的体积、价值和数量。</p>
+<h4 id="输出格式-2"><a href="#输出格式-2" class="headerlink" title="输出格式"></a>输出格式</h4><p>输出一个整数，表示最大价值。</p>
+<h4 id="数据范围-2"><a href="#数据范围-2" class="headerlink" title="数据范围"></a>数据范围</h4><p>0&lt;N,V≤1000&lt;N,V≤100<br>0&lt;vi,wi,si≤1000&lt;vi,wi,si≤100</p>
+<h4 id="输入样例-2"><a href="#输入样例-2" class="headerlink" title="输入样例"></a>输入样例</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">4 5</span><br><span class="line">1 2 3</span><br><span class="line">2 4 1</span><br><span class="line">3 4 3</span><br><span class="line">4 5 2</span><br></pre></td></tr></table></figure>
+
+<h4 id="输出样例：-2"><a href="#输出样例：-2" class="headerlink" title="输出样例："></a>输出样例：</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">10</span><br></pre></td></tr></table></figure>
+
+<h4 id="解题思路-2"><a href="#解题思路-2" class="headerlink" title="解题思路"></a>解题思路</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">因为每一种物品都可以无限使用，那么完全背包问题就是在01背包问题的情况下添加一下物品的限制</span><br><span class="line">相当于有无数件物品，只需要判断每一次 k * v[i] &lt;= j &amp;&amp; k &lt;= s ，s是物品限制的时候，每一次都判断f[j]以及f[j - k * v] + w * k 的最大值即可。</span><br><span class="line">状态表示 f[i][j] </span><br><span class="line">	集合 表示取前i件物品，体积为j的时候能取到的最大价值</span><br><span class="line">	属性 max</span><br><span class="line">集合划分</span><br><span class="line">使用最后一个变化的状态也就是f[i-1]表示取前i-1件物品，这个时候如果j&gt;=v[i]</span><br><span class="line">	两种情况：取第i件物品，不取第i件物品，取最大值</span><br><span class="line">	即f[i][j] = max(f[i-1][j], f[i - 1][j - v[i]] + w[i])</span><br><span class="line">	需要的是上一个状态的下的方程。</span><br><span class="line">	二维状态下 时间复杂度和空间复杂度均为O(NV)</span><br><span class="line">优化成一维：</span><br><span class="line">	因为需要上一个状态的数值，那么可以让体积j从大到小枚举，保证每一次使用的体积是上一次剩下的体积</span><br><span class="line">	一维状态下的时间复杂度没有变，但是空间复杂度被优化到O(V)</span><br></pre></td></tr></table></figure>
+
+<h4 id="code-2"><a href="#code-2" class="headerlink" title="code"></a>code</h4><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.*;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Created by IntelliJ IDEA.</span></span><br><span class="line"><span class="comment"> * User: pzj</span></span><br><span class="line"><span class="comment"> * Date: 2022/7/10</span></span><br><span class="line"><span class="comment"> * Time: 10:24</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> <span class="variable">N</span> <span class="operator">=</span> <span class="number">1010</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> [] f = <span class="keyword">new</span> <span class="title class_">int</span>[N];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">        <span class="type">BufferedReader</span> <span class="variable">br</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">BufferedReader</span>(<span class="keyword">new</span> <span class="title class_">InputStreamReader</span>(System.in));</span><br><span class="line">        <span class="type">BufferedWriter</span> <span class="variable">bw</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">BufferedWriter</span>(<span class="keyword">new</span> <span class="title class_">OutputStreamWriter</span>(System.out));</span><br><span class="line">        String[] s = br.readLine().split(<span class="string">&quot; &quot;</span>);</span><br><span class="line">        <span class="type">int</span> <span class="variable">n</span> <span class="operator">=</span> Integer.parseInt(s[<span class="number">0</span>]);</span><br><span class="line">        <span class="type">int</span> <span class="variable">m</span> <span class="operator">=</span> Integer.parseInt(s[<span class="number">1</span>]);</span><br><span class="line">        <span class="comment">// 每次输入一堆v，w值，因为对于dp来说每一次都是用一组v，w值取更新，所以可以不用数组来接收</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">1</span>; i &lt;= n ; i++) &#123;</span><br><span class="line">            String[] s1 = br.readLine().split(<span class="string">&quot; &quot;</span>);</span><br><span class="line">            <span class="type">int</span> <span class="variable">v</span> <span class="operator">=</span> Integer.parseInt(s1[<span class="number">0</span>]);</span><br><span class="line">            <span class="type">int</span> <span class="variable">w</span> <span class="operator">=</span> Integer.parseInt(s1[<span class="number">1</span>]);</span><br><span class="line">            <span class="type">int</span> <span class="variable">s2</span> <span class="operator">=</span> Integer.parseInt(s1[<span class="number">2</span>]);</span><br><span class="line">            <span class="keyword">for</span>(<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> m ; j &gt;= v;j--)&#123;</span><br><span class="line"><span class="comment">//                System.out.println(j - v);</span></span><br><span class="line">                <span class="keyword">for</span>(<span class="type">int</span> <span class="variable">k</span> <span class="operator">=</span> <span class="number">1</span>; k * v&lt;= j &amp;&amp; k &lt;= s2;k++)</span><br><span class="line">                    f[j] = Math.max(f[j], f[j-k * v] + k * w);</span><br><span class="line"></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(f[m]);</span><br><span class="line">        br.close();</span><br><span class="line">        bw.close();</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>时间复杂度O(N^3)，空间复杂度o(V)</p>
+<h5 id="二进制优化"><a href="#二进制优化" class="headerlink" title="二进制优化"></a>二进制优化</h5><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.*;</span><br><span class="line"><span class="keyword">import</span> java.util.ArrayList;</span><br><span class="line"><span class="keyword">import</span> java.util.List;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Created by IntelliJ IDEA.</span></span><br><span class="line"><span class="comment"> * User: pzj</span></span><br><span class="line"><span class="comment"> * Date: 2022/7/10</span></span><br><span class="line"><span class="comment"> * Time: 10:24</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> <span class="variable">N</span> <span class="operator">=</span> <span class="number">2010</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> [] f = <span class="keyword">new</span> <span class="title class_">int</span>[N];</span><br><span class="line"></span><br><span class="line"><span class="comment">//    public static void main(String[] args) throws IOException &#123;</span></span><br><span class="line"><span class="comment">//        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));</span></span><br><span class="line"><span class="comment">//        BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(System.out));</span></span><br><span class="line"><span class="comment">//        String[] s = br.readLine().split(&quot; &quot;);</span></span><br><span class="line"><span class="comment">//        int n = Integer.parseInt(s[0]);</span></span><br><span class="line"><span class="comment">//        int m = Integer.parseInt(s[1]);</span></span><br><span class="line"><span class="comment">//        // 每次输入一堆v，w值，因为对于dp来说每一次都是用一组v，w值取更新，所以可以不用数组来接收</span></span><br><span class="line"><span class="comment">//        for (int i = 1; i &lt;= n ; i++) &#123;</span></span><br><span class="line"><span class="comment">//            String[] s1 = br.readLine().split(&quot; &quot;);</span></span><br><span class="line"><span class="comment">//            int v = Integer.parseInt(s1[0]);</span></span><br><span class="line"><span class="comment">//            int w = Integer.parseInt(s1[1]);</span></span><br><span class="line"><span class="comment">//            for(int j = m ; j &gt;= v;j--)&#123;</span></span><br><span class="line"><span class="comment">////                System.out.println(j - v);</span></span><br><span class="line"><span class="comment">//                for(int k = 1; k * v&lt;= j;k++)</span></span><br><span class="line"><span class="comment">//                    f[j] = Math.max(f[j], f[j-k * v] + k * w);</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">//            &#125;</span></span><br><span class="line"><span class="comment">//        &#125;</span></span><br><span class="line"><span class="comment">//        System.out.println(f[m]);</span></span><br><span class="line"><span class="comment">//        br.close();</span></span><br><span class="line"><span class="comment">//        bw.close();</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">//    &#125;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 二进制优化算法</span></span><br><span class="line"><span class="comment">     * 转换为0,1背包问题，分成s份放入物品堆当中,那么7 可以被拆成 1 2 4三种数据来表示0-7中的所有数</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> args</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@throws</span> IOException</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">static</span> List&lt;Goods&gt; list = <span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;Goods&gt;();</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">        <span class="type">BufferedReader</span> <span class="variable">br</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">BufferedReader</span>(<span class="keyword">new</span> <span class="title class_">InputStreamReader</span>(System.in));</span><br><span class="line">        <span class="type">BufferedWriter</span> <span class="variable">bw</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">BufferedWriter</span>(<span class="keyword">new</span> <span class="title class_">OutputStreamWriter</span>(System.out));</span><br><span class="line">        String[] s = br.readLine().split(<span class="string">&quot; &quot;</span>);</span><br><span class="line">        <span class="type">int</span> <span class="variable">n</span> <span class="operator">=</span> Integer.parseInt(s[<span class="number">0</span>]);</span><br><span class="line">        <span class="type">int</span> <span class="variable">m</span> <span class="operator">=</span> Integer.parseInt(s[<span class="number">1</span>]);</span><br><span class="line">        <span class="comment">// 每次输入一堆v，w值，因为对于dp来说每一次都是用一组v，w值取更新，所以可以不用数组来接收</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">1</span>; i &lt;= n ; i++) &#123;</span><br><span class="line">            String[] s1 = br.readLine().split(<span class="string">&quot; &quot;</span>);</span><br><span class="line">            <span class="type">int</span> <span class="variable">v</span> <span class="operator">=</span> Integer.parseInt(s1[<span class="number">0</span>]);</span><br><span class="line">            <span class="type">int</span> <span class="variable">w</span> <span class="operator">=</span> Integer.parseInt(s1[<span class="number">1</span>]);</span><br><span class="line">            <span class="type">int</span> <span class="variable">s2</span> <span class="operator">=</span> Integer.parseInt(s1[<span class="number">2</span>]);</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">k</span> <span class="operator">=</span> <span class="number">1</span>; k &lt;= s2 ; k *=<span class="number">2</span>) &#123;</span><br><span class="line">                s2 -= k;</span><br><span class="line">                list.add(<span class="keyword">new</span> <span class="title class_">Goods</span>(v * k, w * k));</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span>(s2 &gt; <span class="number">0</span>)&#123;</span><br><span class="line">                list.add(<span class="keyword">new</span> <span class="title class_">Goods</span>(s2 * v, s2 * w));</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">for</span> (Goods good :list) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> m; j &gt;= good.getV(); j--) &#123;</span><br><span class="line">                f[j] = Math.max(f[j],f[j-good.getV()] + good.getW());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(f[m]);</span><br><span class="line">        br.close();</span><br><span class="line">        bw.close();</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Goods</span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> v;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> w;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">Goods</span><span class="params">()</span> &#123;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">Goods</span><span class="params">(<span class="type">int</span> v,<span class="type">int</span> w)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.v = v;</span><br><span class="line">        <span class="built_in">this</span>.w = w;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span>  <span class="type">int</span> <span class="title function_">getV</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> v;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span>  <span class="keyword">void</span> <span class="title function_">setV</span><span class="params">(<span class="type">int</span> v)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.v = v;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span>  <span class="type">int</span> <span class="title function_">getW</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> w;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">setW</span><span class="params">(<span class="type">int</span> w)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.w = w;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>时间复杂度O(N^2logN)，空间复杂度o(V)</p>
+<h5 id="单调队列优化"><a href="#单调队列优化" class="headerlink" title="单调队列优化"></a>单调队列优化</h5><h2 id="分组背包问题"><a href="#分组背包问题" class="headerlink" title="分组背包问题"></a>分组背包问题</h2><p>有 NN 组物品和一个容量是 VV 的背包。</p>
+<p>每组物品有若干个，同一组内的物品最多只能选一个。<br>每件物品的体积是 vijvij，价值是 wijwij，其中 ii 是组号，jj 是组内编号。</p>
+<p>求解将哪些物品装入背包，可使物品总体积不超过背包容量，且总价值最大。</p>
+<p>输出最大价值。</p>
+<h4 id="输入格式-3"><a href="#输入格式-3" class="headerlink" title="输入格式"></a>输入格式</h4><p>第一行有两个整数 N，VN，V，用空格隔开，分别表示物品组数和背包容量。</p>
+<p>接下来有 NN 组数据：</p>
+<ul>
+<li>每组数据第一行有一个整数 SiSi，表示第 ii 个物品组的物品数量；</li>
+<li>每组数据接下来有 SiSi 行，每行有两个整数 vij,wijvij,wij，用空格隔开，分别表示第 ii 个物品组的第 jj 个物品的体积和价值；</li>
+</ul>
+<h4 id="输出格式-3"><a href="#输出格式-3" class="headerlink" title="输出格式"></a>输出格式</h4><p>输出一个整数，表示最大价值。</p>
+<h4 id="数据范围-3"><a href="#数据范围-3" class="headerlink" title="数据范围"></a>数据范围</h4><p>0&lt;N,V≤1000&lt;N,V≤100<br>0&lt;Si≤1000&lt;Si≤100<br>0&lt;vij,wij≤1000&lt;vij,wij≤100</p>
+<h4 id="输入样例-3"><a href="#输入样例-3" class="headerlink" title="输入样例"></a>输入样例</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">3 5</span><br><span class="line">2</span><br><span class="line">1 2</span><br><span class="line">2 4</span><br><span class="line">1</span><br><span class="line">3 4</span><br><span class="line">1</span><br><span class="line">4 5</span><br></pre></td></tr></table></figure>
+
+<h4 id="输出样例：-3"><a href="#输出样例：-3" class="headerlink" title="输出样例："></a>输出样例：</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">8</span><br></pre></td></tr></table></figure>
+
+<h4 id="解题思路-3"><a href="#解题思路-3" class="headerlink" title="解题思路"></a>解题思路</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">集合划分的时候从每一组的每一个物品去取最大值，保证集合划分不重不漏，刚好能覆盖一组的所有物品，即为01背包中的一个物品变成一组物品</span><br><span class="line">第i组物品前一个状态是第i-1组物品</span><br></pre></td></tr></table></figure>
+
+<p>不明白如下图:</p>
+<p><img src="duochong.png"></p>
+<h4 id="code-3"><a href="#code-3" class="headerlink" title="code"></a>code</h4><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> java.io.*;</span><br><span class="line"><span class="keyword">import</span> java.util.Scanner;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Created by IntelliJ IDEA.</span></span><br><span class="line"><span class="comment"> * User: pzj</span></span><br><span class="line"><span class="comment"> * Date: 2022/7/10</span></span><br><span class="line"><span class="comment"> * Time: 14:48</span></span><br><span class="line"><span class="comment"> * 分组背包</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Main</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> <span class="variable">N</span> <span class="operator">=</span> <span class="number">1010</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> [] f = <span class="keyword">new</span> <span class="title class_">int</span> [N];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> [] v = <span class="keyword">new</span> <span class="title class_">int</span> [N];</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">int</span> [] w = <span class="keyword">new</span> <span class="title class_">int</span> [N];</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">        <span class="type">BufferedReader</span> <span class="variable">br</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">BufferedReader</span>(<span class="keyword">new</span> <span class="title class_">InputStreamReader</span>(System.in));</span><br><span class="line">        <span class="type">BufferedWriter</span> <span class="variable">bw</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">BufferedWriter</span>(<span class="keyword">new</span> <span class="title class_">OutputStreamWriter</span>(System.out));</span><br><span class="line">        <span class="type">Scanner</span> <span class="variable">scanner</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Scanner</span>(System.in);</span><br><span class="line">        String[] s = br.readLine().split(<span class="string">&quot; &quot;</span>);</span><br><span class="line">        <span class="type">int</span> <span class="variable">n</span> <span class="operator">=</span> Integer.parseInt(s[<span class="number">0</span>]);</span><br><span class="line">        <span class="type">int</span> <span class="variable">m</span> <span class="operator">=</span> Integer.parseInt(s[<span class="number">1</span>]);</span><br><span class="line">        <span class="comment">// 每次输入一堆v，w值，因为对于dp来说每一次都是用一组v，w值取更新，所以可以不用数组来接收</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">1</span>; i &lt;= n ; i++) &#123;</span><br><span class="line">            <span class="type">String</span> <span class="variable">s1</span> <span class="operator">=</span> br.readLine();</span><br><span class="line">            <span class="type">int</span> <span class="variable">x</span> <span class="operator">=</span> Integer.parseInt(s1);</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> <span class="number">0</span>; j &lt; x ; j++) &#123;</span><br><span class="line">                String[] s2 = br.readLine().split(<span class="string">&quot; &quot;</span>);</span><br><span class="line">                v[j] = Integer.parseInt(s2[<span class="number">0</span>]);</span><br><span class="line">                w[j] = Integer.parseInt(s2[<span class="number">1</span>]);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">j</span> <span class="operator">=</span> m; j &gt;= <span class="number">0</span>; j--) &#123;</span><br><span class="line">                <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">k</span> <span class="operator">=</span> <span class="number">0</span>; k &lt; x; k++) &#123;</span><br><span class="line">                   <span class="keyword">if</span>(j &gt;= v[k]) f[j] =Math.max(f[j], f[j - v[k]] + w[k]);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println(f[m]);</span><br><span class="line">        br.close();</span><br><span class="line">        bw.close();</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+]]></content>
+      <categories>
+        <category>动态规划</category>
+      </categories>
+      <tags>
+        <tag>背包问题</tag>
+        <tag>动态规划</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Hello World</title>
+    <url>/posts/4a17b156/</url>
+    <content><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
+<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p>
+<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p>
+<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p>
+<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
+]]></content>
+  </entry>
+</search>

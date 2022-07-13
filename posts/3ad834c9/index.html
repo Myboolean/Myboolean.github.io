@@ -1,0 +1,452 @@
+<!DOCTYPE html><html lang="zh-Hans" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>zookeeper | BoiceBlog</title><meta name="keywords" content="注册中心,配置管理,分布式系统"><meta name="author" content="Peng zhijian"><meta name="copyright" content="Peng zhijian"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="ZooKeeper 命令操作ZooKeeper数据模型 Zookeeper是一个树形目录服务，他的数据模型和Unix的文件系统目录树很类似，拥有一个层次化结构。 这里面的没一个节点都被称为:ZNODE,每个节点上都会保存自己的数据和结点信息. 节点可以有子节点，同时也允许少量(1MB)数据存储在该节点下。 节点分为四大类: PERSISTENT 持久化节点 EPHEMERAL 临时节点: -e P">
+<meta property="og:type" content="article">
+<meta property="og:title" content="zookeeper">
+<meta property="og:url" content="http://example.com/posts/3ad834c9/index.html">
+<meta property="og:site_name" content="BoiceBlog">
+<meta property="og:description" content="ZooKeeper 命令操作ZooKeeper数据模型 Zookeeper是一个树形目录服务，他的数据模型和Unix的文件系统目录树很类似，拥有一个层次化结构。 这里面的没一个节点都被称为:ZNODE,每个节点上都会保存自己的数据和结点信息. 节点可以有子节点，同时也允许少量(1MB)数据存储在该节点下。 节点分为四大类: PERSISTENT 持久化节点 EPHEMERAL 临时节点: -e P">
+<meta property="og:locale">
+<meta property="og:image" content="http://example.com/img/background.jpg">
+<meta property="article:published_time" content="2022-07-13T01:26:41.000Z">
+<meta property="article:modified_time" content="2022-07-13T11:23:32.316Z">
+<meta property="article:author" content="Peng zhijian">
+<meta property="article:tag" content="注册中心">
+<meta property="article:tag" content="配置管理">
+<meta property="article:tag" content="分布式系统">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/img/background.jpg"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="http://example.com/posts/3ad834c9/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"./public/search.xml","languages":{"hits_empty":"We didn't find any results for the search: ${query}"}},
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  relativeDate: {
+    homepage: true,
+    post: true
+  },
+  runtime: 'days',
+  date_suffix: {
+    just: 'Just',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: {"limitCount":50,"languages":{"author":"Author: Peng zhijian","link":"Link: ","source":"Source: BoiceBlog","info":"Copyright is owned by the author. For commercial reprints, please contact the author for authorization. For non-commercial reprints, please indicate the source."}},
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    jQuery: 'https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js',
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/js/jquery.justifiedGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/justifiedGallery/dist/css/justifiedGallery.min.css'
+    },
+    fancybox: {
+      js: 'https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isanchor: true
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = { 
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: true,
+  isToc: true,
+  postUpdate: '2022-07-13 19:23:32'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    })(window)</script><link rel="stylesheet" href="/css/universe.css"><link rel="stylesheet" href="/css/custom.css"><!-- hexo injector head_end start --><link rel="stylesheet" href="https://unpkg.zhimg.com/hexo-butterfly-clock/lib/clock.min.css" /><!-- hexo injector head_end end --><meta name="generator" content="Hexo 5.4.2"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">Loading...</div></div></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="author-avatar"><img class="avatar-img" src="/img/index.jpg" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data"><div class="data-item is-center"><div class="data-item-link"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">4</div></a></div></div><div class="data-item is-center"><div class="data-item-link"><a href="/tags/"><div class="headline">Tags</div><div class="length-num">7</div></a></div></div><div class="data-item is-center"><div class="data-item-link"><a href="/categories/"><div class="headline">Categories</div><div class="length-num">3</div></a></div></div></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 清单</span><i class="fas fa-chevron-down expand"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/pic/"><i class="fa-fw fas fa-images"></i><span> 照片</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('/img/background.jpg')"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">BoiceBlog</a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> Search</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 时间轴</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="javascript:void(0);"><span> 清单</span><i class="fas fa-chevron-down expand"></i></a><ul class="menus_item_child"><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/pic/"><i class="fa-fw fas fa-images"></i><span> 照片</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 电影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">zookeeper</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">Created</span><time class="post-meta-date-created" datetime="2022-07-13T01:26:41.000Z" title="Created 2022-07-13 09:26:41">2022-07-13</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">Updated</span><time class="post-meta-date-updated" datetime="2022-07-13T11:23:32.316Z" title="Updated 2022-07-13 19:23:32">2022-07-13</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F/">分布式</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">1.1k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>4min</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="zookeeper"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">Post View:</span><span id="busuanzi_value_page_pv"></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h2 id="ZooKeeper-命令操作"><a href="#ZooKeeper-命令操作" class="headerlink" title="ZooKeeper 命令操作"></a>ZooKeeper 命令操作</h2><h3 id="ZooKeeper数据模型"><a href="#ZooKeeper数据模型" class="headerlink" title="ZooKeeper数据模型"></a>ZooKeeper数据模型</h3><ul>
+<li>Zookeeper是一个树形目录服务，他的数据模型和Unix的文件系统目录树很类似，拥有一个层次化结构。</li>
+<li>这里面的没一个节点都被称为:ZNODE,每个节点上都会保存自己的数据和结点信息.</li>
+<li>节点可以有子节点，同时也允许少量(1MB)数据存储在该节点下。</li>
+<li>节点分为四大类:</li>
+<li>PERSISTENT 持久化节点</li>
+<li>EPHEMERAL 临时节点: -e</li>
+<li>PERSISTENT_SEQENTIAL 持久化顺序节点: -s</li>
+<li>EPHEMERAL _SEQENTIAL 临时顺序节点：-es</li>
+</ul>
+<p><img src="C:\Users\pzj\AppData\Roaming\Typora\typora-user-images\image-20220713093128099.png" alt="image-20220713093128099"></p>
+<h3 id="ZooKeeper-服务端命令"><a href="#ZooKeeper-服务端命令" class="headerlink" title="ZooKeeper 服务端命令"></a>ZooKeeper 服务端命令</h3><ul>
+<li>启动 ./zkServer.sh start</li>
+<li>停止./zkServer.sh stop</li>
+<li>查看 ./zkServer.sh status</li>
+<li>重启 ./zkServer.sh restart</li>
+</ul>
+<h3 id="ZooKeeper-客户端命令"><a href="#ZooKeeper-客户端命令" class="headerlink" title="ZooKeeper 客户端命令"></a>ZooKeeper 客户端命令</h3><ul>
+<li><p>./zkCli.sh -server localhost:2181  连接客户端</p>
+<ul>
+<li>连接本机只需要./zCli.sh </li>
+<li>quit 退出命令</li>
+</ul>
+</li>
+<li><p>ls /    /代表根节点</p>
+</li>
+<li><p>create /   create之后跟目录  ,目录之后跟数据，数据也可以不写</p>
+<ul>
+<li>有数据的可以使用get 加全路径获取数据</li>
+<li>set命令可以给其设置数据</li>
+<li>create 创建不能重复</li>
+</ul>
+</li>
+<li><p>delete 加全路径名删除</p>
+<ul>
+<li>文件里面有子目录用deleteall进行删除</li>
+</ul>
+</li>
+<li><p>help 帮助命令，防止遗忘</p>
+</li>
+<li><p>ls - s /dubbo 查看dubbo的详细信息</p>
+</li>
+</ul>
+<h2 id="Curator"><a href="#Curator" class="headerlink" title="Curator"></a>Curator</h2><h3 id="Curator-常用API"><a href="#Curator-常用API" class="headerlink" title="Curator 常用API"></a>Curator 常用API</h3><ul>
+<li><p>创建连接</p>
+</li>
+<li><p>~~~java</p>
+<pre><code>@Test
+public void test1()&#123;
+    // 1.第一种方式
+    /**
+     * String connectString,  连接字符串.zk server地址和端口
+     * int sessionTimeoutMs,   会话超时时间，单位ms
+     * int connectionTimeoutMs,  连接超时时间,单位ms
+     * RetryPolicy retryPolicy 超时重传策略
+     */
+    //重试策略
+    ExponentialBackoffRetry retry = new ExponentialBackoffRetry(3000, 10);
+</code></pre>
+<p>//        CuratorFramework curatorFramework = CuratorFrameworkFactory.newClient(“192.168.116.128:2181”,<br>//                60 * 1000, 15 * 1000, retry);<br>//        //开启连接<br>//        curatorFramework.start();</p>
+<pre><code>            //第二种方式
+    CuratorFramework build = CuratorFrameworkFactory.builder().connectString(&quot;192.168.116.128:2181&quot;)
+            .sessionTimeoutMs(60 * 1000).sessionTimeoutMs(15 * 1000).retryPolicy(retry).
+            namespace(&quot;itheima&quot;).build();
+    build.start();
+    System.out.println(build);
+&#125;
+</code></pre>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">- 创建结点</span><br><span class="line"></span><br><span class="line">  - 基本创建</span><br><span class="line"></span><br><span class="line">  - ~~~java</span><br><span class="line">    //        基本创建</span><br><span class="line">            //创建结点没有指定数据，那么将当前客户端的ip当做数据进行存储</span><br><span class="line">            String s = client.create().forPath(&quot;/app1&quot;);</span><br><span class="line">            System.out.println(s);</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>创建结点带数据</p>
+</li>
+<li><p>```java</p>
+<pre><code>    String s = client.create().forPath(&quot;/app2&quot;, &quot;heh&quot;.getBytes(StandardCharsets.UTF_8));
+</code></pre>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">- 设置结点类型</span><br><span class="line"></span><br><span class="line">- ```java</span><br><span class="line">  String s = client.create().withMode(CreateMode.PERSISTENT).forPath(&quot;/app3&quot;, &quot;heh3&quot;.getBytes(StandardCharsets.UTF_8));</span><br></pre></td></tr></table></figure></li>
+<li><p>创建多级结点  /app1/p1</p>
+</li>
+<li><p>```java<br>String s = client.create().creatingParentsIfNeeded().withMode(CreateMode.PERSISTENT).forPath(“/node/app1”, “node”.getBytes(StandardCharsets.UTF_8));</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">- 查询结点：</span><br><span class="line"></span><br><span class="line">  - 查询数据:getData()</span><br><span class="line"></span><br><span class="line">  - 查询子节点: ls  getChildren()</span><br><span class="line"></span><br><span class="line">  - 查询结点状态信息:ls -s  </span><br><span class="line"></span><br><span class="line">  - </span><br><span class="line"></span><br><span class="line">  - ```java</span><br><span class="line">        @Test</span><br><span class="line">        public void testFind() throws Exception &#123;</span><br><span class="line">            // 1.第一种方式</span><br><span class="line">            //查询数据</span><br><span class="line">    //      client.get</span><br><span class="line">    //        byte[] bytes = client.getData().forPath(&quot;/app1&quot;);</span><br><span class="line">    //        System.out.println(new String(bytes));</span><br><span class="line">    //查询子节点</span><br><span class="line">    //        List&lt;String&gt; strings = client.getChildren().forPath(&quot;/&quot;);</span><br><span class="line">    //        System.out.println(strings);</span><br><span class="line">            // 查询结点的状态信息</span><br><span class="line">            Stat stat = new Stat();</span><br><span class="line">            client.getData().storingStatIn(stat).forPath(&quot;/app1&quot;);</span><br><span class="line">            System.out.println(stat);</span><br><span class="line">        &#125;</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p>修改结点:</p>
+</li>
+<li><p>```<br>@Test<br>public void testSet() throws Exception {</p>
+<pre><code>Stat stat = new Stat();
+client.getData().storingStatIn(stat).forPath(&quot;/app1&quot;);
+
+// withVersion根据版本修改，为-1则标识为忽略版本号,version是通过查询出来的，目的让其他客户端或者线程不干扰我
+stat = client.setData()
+        // 版本号 -1 标识忽略版本号
+        .withVersion(stat.getVersion())
+        .forPath(&quot;/app1&quot;, &quot;kiss&quot;.getBytes());
+System.out.println(stat);
+</code></pre>
+<p>}</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">- 删除结点:</span><br><span class="line"></span><br><span class="line">- </span><br><span class="line"></span><br><span class="line">- ```java</span><br><span class="line">      @Test</span><br><span class="line">      public void testDelete() throws Exception &#123;</span><br><span class="line">  //        Stat stat = new Stat();</span><br><span class="line">  //        client.getData().storingStatIn(stat).forPath(&quot;/app1&quot;);</span><br><span class="line">  </span><br><span class="line">  </span><br><span class="line">          // 删除单个结点</span><br><span class="line">          // withVersion根据版本修改，为-1则标识为忽略版本号,version是通过查询出来的，目的让其他客户端或者线程不干扰我</span><br><span class="line">  //        client.delete().withVersion(stat.getVersion())</span><br><span class="line">  //                .forPath(&quot;/app1&quot;);</span><br><span class="line">  //        System.out.println(stat);</span><br><span class="line">          // 删除带有子节点的节点</span><br><span class="line">  //        client.delete().deletingChildrenIfNeeded().forPath(&quot;/node&quot;);</span><br><span class="line">          //必须成功的删除</span><br><span class="line">  //        client.delete().guaranteed().forPath(&quot;/app2&quot;);</span><br><span class="line">          //回调</span><br><span class="line">  </span><br><span class="line">          client.delete().guaranteed().inBackground(new BackgroundCallback() &#123;</span><br><span class="line">              @Override</span><br><span class="line">              public void processResult(CuratorFramework curatorFramework, CuratorEvent curatorEvent) throws Exception &#123;</span><br><span class="line">                  System.out.println(&quot;我被删除了&quot;);</span><br><span class="line">                  System.out.println(curatorFramework + &quot;  &quot; + curatorEvent);</span><br><span class="line">              &#125;</span><br><span class="line">          &#125;).forPath(&quot;/app3&quot;);</span><br><span class="line">      &#125;</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h4 id="Watch事件监听"><a href="#Watch事件监听" class="headerlink" title="Watch事件监听"></a>Watch事件监听</h4><ul>
+<li>Zookeeper允许客户在指定节点上注册一个Watch，并且在一些特定时间出发的时候，ZooKeeper服务端会将事件通知到感兴趣的客户端上去，该机制是ZooKeeper实现分布式协调服务的重要特性.</li>
+<li><img src="C:\Users\pzj\AppData\Roaming\Typora\typora-user-images\image-20220713151642621.png" alt="image-20220713151642621"></li>
+<li></li>
+</ul>
+<p><img src="C:\Users\pzj\AppData\Roaming\Typora\typora-user-images\image-20220713151940116.png" alt="image-20220713151940116"></p>
+<ul>
+<li><p>NodeCache</p>
+</li>
+<li><pre><code>@Test
+public void testNodeCache() throws Exception &#123;
+    // 1. 创建NodeCache对象
+    NodeCache nodeCache = new NodeCache(client,&quot;/app1&quot;, false);
+    // 2. 注册监听
+    nodeCache.getListenable().addListener(new NodeCacheListener() &#123;
+        @Override
+        public void nodeChanged() throws Exception &#123;
+            System.out.println(&quot;节点变化了&quot;);
+            //获取修改节点后的数据
+            byte[] data = nodeCache.getCurrentData().getData();
+            System.out.println(new String(data));
+        &#125;
+    &#125;);
+    //3. 开启监听,如果设置为True则开启监听时加载缓冲数据
+    nodeCache.start(true);
+    while (true)&#123;
+
+    &#125;
+&#125;
+</code></pre>
+</li>
+<li><p>其他的类只是功能不一样，使用方法雷同</p>
+</li>
+</ul>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="mailto:undefined">Peng zhijian</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="http://example.com/posts/3ad834c9/">http://example.com/posts/3ad834c9/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83/">注册中心</a><a class="post-meta__tags" href="/tags/%E9%85%8D%E7%BD%AE%E7%AE%A1%E7%90%86/">配置管理</a><a class="post-meta__tags" href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/">分布式系统</a></div><div class="post_share"><div class="social-share" data-image="/img/background.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/social-share.js/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="next-post pull-full"><a href="/posts/f6253398/"><img class="next-cover" src="/img/dubbo.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">Next Post</div><div class="next_info">Dubbo</div></div></a></div></nav><hr/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> Comment</span></div><div id="comment-switch"><span class="first-comment">Valine</span><span class="switch-btn"></span><span class="second-comment">Disqus</span></div></div><div class="comment-wrap"><div><div class="vcomment" id="vcomment"></div></div><div><div id="disqus_thread"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="card-info-avatar is-center"><img class="avatar-img" src="/img/index.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/><div class="author-info__name">Peng zhijian</div><div class="author-info__description">大鹏一日同风起，扶摇直上九万里，假使风歇时下来，亦能颠阙沧溟水</div></div><div class="card-info-data"><div class="card-info-data-item is-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">4</div></a></div><div class="card-info-data-item is-center"><a href="/tags/"><div class="headline">Tags</div><div class="length-num">7</div></a></div><div class="card-info-data-item is-center"><a href="/categories/"><div class="headline">Categories</div><div class="length-num">3</div></a></div></div><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/Myboolean" target="_blank" title="Github"><i class="fab fa-github"></i></a><a class="social-icon" href="mailto:1565905154@qq.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn card-announcement-animation"></i><span>Announcement</span></div><div class="announcement_content">欢迎来到Boice Fang的博客</div></div><div class="xpand" style="height:200px;"><canvas class="illo" width="800" height="800" style="max-width: 200px; max-height: 200px; touch-action: none; width: 640px; height: 640px;"></canvas></div><script src="https://fastly.jsdelivr.net/gh/xiaopengand/blogCdn@latest/xzxr/twopeople1.js"></script><script src="https://fastly.jsdelivr.net/gh/xiaopengand/blogCdn@latest/xzxr/zdog.dist.js"></script><script id="rendered-js" src="https://fastly.jsdelivr.net/gh/xiaopengand/blogCdn@latest/xzxr/twopeople.js"></script><style>.card-widget.card-announcement {
+margin: 0;
+align-items: center;
+justify-content: center;
+text-align: center;
+}
+canvas {
+display: block;
+margin: 0 auto;
+cursor: move;
+}</style><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#ZooKeeper-%E5%91%BD%E4%BB%A4%E6%93%8D%E4%BD%9C"><span class="toc-number">1.</span> <span class="toc-text">ZooKeeper 命令操作</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#ZooKeeper%E6%95%B0%E6%8D%AE%E6%A8%A1%E5%9E%8B"><span class="toc-number">1.1.</span> <span class="toc-text">ZooKeeper数据模型</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#ZooKeeper-%E6%9C%8D%E5%8A%A1%E7%AB%AF%E5%91%BD%E4%BB%A4"><span class="toc-number">1.2.</span> <span class="toc-text">ZooKeeper 服务端命令</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#ZooKeeper-%E5%AE%A2%E6%88%B7%E7%AB%AF%E5%91%BD%E4%BB%A4"><span class="toc-number">1.3.</span> <span class="toc-text">ZooKeeper 客户端命令</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Curator"><span class="toc-number">2.</span> <span class="toc-text">Curator</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Curator-%E5%B8%B8%E7%94%A8API"><span class="toc-number">2.1.</span> <span class="toc-text">Curator 常用API</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Watch%E4%BA%8B%E4%BB%B6%E7%9B%91%E5%90%AC"><span class="toc-number">2.1.1.</span> <span class="toc-text">Watch事件监听</span></a></li></ol></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Post</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/posts/3ad834c9/" title="zookeeper"><img src="/img/background.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="zookeeper"/></a><div class="content"><a class="title" href="/posts/3ad834c9/" title="zookeeper">zookeeper</a><time datetime="2022-07-13T01:26:41.000Z" title="Created 2022-07-13 09:26:41">2022-07-13</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/f6253398/" title="Dubbo"><img src="/img/dubbo.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Dubbo"/></a><div class="content"><a class="title" href="/posts/f6253398/" title="Dubbo">Dubbo</a><time datetime="2022-07-11T13:19:48.000Z" title="Created 2022-07-11 21:19:48">2022-07-11</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/236f2ea1/" title="背包问题全解"><img src="/img/bag.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="背包问题全解"/></a><div class="content"><a class="title" href="/posts/236f2ea1/" title="背包问题全解">背包问题全解</a><time datetime="2022-07-11T09:48:26.000Z" title="Created 2022-07-11 17:48:26">2022-07-11</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/4a17b156/" title="Hello World"><img src="https://i.loli.net/2020/05/01/gkihqEjXxJ5UZ1C.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Hello World"/></a><div class="content"><a class="title" href="/posts/4a17b156/" title="Hello World">Hello World</a><time datetime="2022-07-11T03:04:10.874Z" title="Created 2022-07-11 11:04:10">2022-07-11</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url('/img/background.jpg')"><div id="footer-wrap"><div class="copyright">&copy;2022  <i id="heartbeat" class="fa fas fa-heartbeat"></i> Peng zhijian</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div><div class="footer_custom_text">I wish you to become your own sun, no need to rely on who's light.<p><a target="_blank" href="https://hexo.io/"><img src="https://img.shields.io/badge/Frame-Hexo-blue?style=flat&logo=hexo" title="博客框架为Hexo"></a>&nbsp;<a target="_blank" href="https://butterfly.js.org/"><img src="https://img.shields.io/badge/Theme-Butterfly-6513df?style=flat&logo=bitdefender" title="主题采用butterfly"></a>&nbsp;<a target="_blank" href="https://www.jsdelivr.com/"><img src="https://img.shields.io/badge/CDN-jsDelivr-orange?style=flat&logo=jsDelivr" title="本站使用JsDelivr为静态资源提供CDN加速"></a> &nbsp;<a target="_blank" href="https://vercel.com/ "><img src="https://img.shields.io/badge/Hosted-Vervel-brightgreen?style=flat&logo=Vercel" title="本站采用双线部署，默认线路托管于Vercel"></a>&nbsp;<a target="_blank" href="https://vercel.com/ "><img src="https://img.shields.io/badge/Hosted-Coding-0cedbe?style=flat&logo=Codio" title="本站采用双线部署，联通线路托管于Coding"></a>&nbsp;<a target="_blank" href="https://github.com/"><img src="https://img.shields.io/badge/Source-Github-d021d6?style=flat&logo=GitHub" title="本站项目由Gtihub托管"></a>&nbsp;<a target="_blank" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img src="https://img.shields.io/badge/Copyright-BY--NC--SA%204.0-d42328?style=flat&logo=Claris" title="本站采用知识共享署名-非商业性使用-相同方式共享4.0国际许可协议进行许可"></a></p></div></div><head><link rel="stylesheet" href="https://fastly.jsdelivr.net/gh/HCLonely/images@master/others/heartbeat.min.css">
+</head></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="Scroll To Comments"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="Back To Top"><i class="fas fa-arrow-up"></i></button></div></div><div id="local-search"><div class="search-dialog"><div class="search-dialog__title" id="local-search-title">Local search</div><div id="local-input-panel"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="Search for Posts" type="text"/></div></div></div><hr/><div id="local-search-results"></div><span class="search-close-button"><i class="fas fa-times"></i></span></div><div id="search-mask"></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/search/local-search.js"></script><script>var preloader = {
+  endLoading: () => {
+    document.body.style.overflow = 'auto';
+    document.getElementById('loading-box').classList.add("loaded")
+  },
+  initLoading: () => {
+    document.body.style.overflow = '';
+    document.getElementById('loading-box').classList.remove("loaded")
+
+  }
+}
+window.addEventListener('load',preloader.endLoading())</script><div class="js-pjax"><script>function loadValine () {
+  function initValine () {
+    const valine = new Valine(Object.assign({
+      el: '#vcomment',
+      appId: '',
+      appKey: '',
+      placeholder: 'Please leave your footprints',
+      avatar: 'monsterid',
+      meta: 'nick,mail,link'.split(','),
+      pageSize: '10',
+      lang: 'zh-Hans',
+      recordIP: false,
+      serverURLs: '',
+      emojiCDN: '',
+      emojiMaps: "",
+      enableQQ: false,
+      path: window.location.pathname,
+      requiredFields: ["nick,mail"],
+      visitor: false
+    }, null))
+  }
+
+  if (typeof Valine === 'function') initValine() 
+  else getScript('https://cdn.jsdelivr.net/npm/valine/dist/Valine.min.js').then(initValine)
+}
+
+if ('Valine' === 'Valine' || !false) {
+  if (false) btf.loadComment(document.getElementById('vcomment'),loadValine)
+  else setTimeout(loadValine, 0)
+} else {
+  function loadOtherComment () {
+    loadValine()
+  }
+}</script><script>function loadDisqus () {
+  var disqus_config = function () {
+    this.page.url = 'http://example.com/posts/3ad834c9/'
+    this.page.identifier = 'posts/3ad834c9/'
+    this.page.title = 'zookeeper'
+  };
+
+  window.disqusReset = () => {
+    DISQUS.reset({
+      reload: true,
+      config: disqus_config
+    })
+  }
+
+  if (window.DISQUS) disqusReset()
+  else {
+    (function() { 
+      var d = document, s = d.createElement('script');
+      s.src = 'https://.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', +new Date());
+      (d.head || d.body).appendChild(s);
+    })();
+  }
+}
+
+if ('Valine' === 'Disqus' || !false) {
+  if (false) btf.loadComment(document.getElementById('disqus_thread'), loadDisqus)
+  else loadDisqus()
+} else {
+  function loadOtherComment () {
+    loadDisqus()
+  }
+}
+</script></div><script src="/js/cursor.js"></script><canvas id="universe"></canvas><script defer src="/js/universe.js"></script><script async src="https://npm.elemecdn.com/tzy-blog/lib/js/other/sakura.js"></script><script async src="/js/chocolate.js"></script><script id="canvas_nest" defer="defer" color="0,0,255" opacity="0.7" zIndex="-1" count="99" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/dist/canvas-nest.min.js"></script><script id="click-show-text" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/dist/click-show-text.min.js" data-mobile="false" data-text="LOVE,FANG,FANG" data-fontsize="15px" data-random="false" async="async"></script><script src="https://cdn.jsdelivr.net/npm/pjax/pjax.min.js"></script><script>let pjaxSelectors = [
+  'title',
+  '#config-diff',
+  '#body-wrap',
+  '#rightside-config-hide',
+  '#rightside-config-show',
+  '.js-pjax'
+]
+
+if (false) {
+  pjaxSelectors.unshift('meta[property="og:image"]', 'meta[property="og:title"]', 'meta[property="og:url"]')
+}
+
+var pjax = new Pjax({
+  elements: 'a:not([target="_blank"])',
+  selectors: pjaxSelectors,
+  cacheBust: false,
+  analytics: false,
+  scrollRestoration: false
+})
+
+document.addEventListener('pjax:complete', function () {
+  window.refreshFn()
+
+  document.querySelectorAll('script[data-pjax]').forEach(item => {
+    const newScript = document.createElement('script')
+    const content = item.text || item.textContent || item.innerHTML || ""
+    Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+    newScript.appendChild(document.createTextNode(content))
+    item.parentNode.replaceChild(newScript, item)
+  })
+
+  GLOBAL_CONFIG.islazyload && window.lazyLoadInstance.update()
+
+  typeof chatBtnFn === 'function' && chatBtnFn()
+  typeof panguInit === 'function' && panguInit()
+
+  // google analytics
+  typeof gtag === 'function' && gtag('config', '', {'page_path': window.location.pathname});
+
+  // baidu analytics
+  typeof _hmt === 'object' && _hmt.push(['_trackPageview',window.location.pathname]);
+
+  typeof loadMeting === 'function' && document.getElementsByClassName('aplayer').length && loadMeting()
+
+  // Analytics
+  if (false) {
+    MtaH5.pgv()
+  }
+
+  // prismjs
+  typeof Prism === 'object' && Prism.highlightAll()
+
+  typeof preloader === 'object' && preloader.endLoading()
+})
+
+
+document.addEventListener('pjax:send', function () {
+  typeof preloader === 'object' && preloader.initLoading()
+  
+  if (window.aplayers) {
+    for (let i = 0; i < window.aplayers.length; i++) {
+      if (!window.aplayers[i].options.fixed) {
+        window.aplayers[i].destroy()
+      }
+    }
+  }
+
+  typeof typed === 'object' && typed.destroy()
+
+  //reset readmode
+  const $bodyClassList = document.body.classList
+  $bodyClassList.contains('read-mode') && $bodyClassList.remove('read-mode')
+
+})
+
+document.addEventListener('pjax:error', (e) => {
+  if (e.request.status === 404) {
+    pjax.loadUrl('/404.html')
+  }
+})</script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div><!-- hexo injector body_end start --><script data-pjax>
+  function butterfly_clock_injector_config(){
+    var parent_div_git = document.getElementsByClassName('sticky_layout')[0];
+    var item_html = '<div class="card-widget card-clock"><div class="card-glass"><div class="card-background"><div class="card-content"><div id="hexo_electric_clock"><img class="entered loading" id="card-clock-loading" src="https://fastly.jsdelivr.net/gh/tzy13755126023/BLOG_SOURCE/theme_f/loading.gif" style="height: 120px; width: 100%;" data-ll-status="loading"/></div></div></div></div></div>';
+    console.log('已挂载butterfly_clock')
+    parent_div_git.insertAdjacentHTML("afterbegin",item_html)
+    }
+  var elist = 'null'.split(',');
+  var cpage = location.pathname;
+  var epage = 'all';
+  var flag = 0;
+
+  for (var i=0;i<elist.length;i++){
+    if (cpage.includes(elist[i])){
+      flag++;
+    }
+  }
+
+  if ((epage ==='all')&&(flag == 0)){
+    butterfly_clock_injector_config();
+  }
+  else if (epage === cpage){
+    butterfly_clock_injector_config();
+  }
+  </script><script src="https://pv.sohu.com/cityjson?ie=utf-8"></script><script data-pjax src="https://unpkg.zhimg.com/hexo-butterfly-clock/lib/clock.min.js"></script><!-- hexo injector body_end end --><script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"model":{"jsonPath":"/live2dw/assets/shizuku.model.json"},"display":{"position":"right","width":250,"height":500},"mobile":{"show":true},"log":false,"pluginJsPath":"lib/","pluginModelPath":"assets/","pluginRootPath":"live2dw/","tagMode":false});</script></body></html>
